@@ -13,9 +13,14 @@ import java.util.Date;
 import java.util.Iterator;
 import java.util.Scanner;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.sun.xml.internal.ws.util.StringUtils;
 
+import jdk.nashorn.api.scripting.JSObject;
 import jdk.nashorn.internal.runtime.arrays.IteratorAction;
+import model.data_structures.DoubleLinkedList;
 import model.data_structures.IQueue;
 import model.data_structures.IStack;
 import model.data_structures.Nodo;
@@ -38,32 +43,32 @@ public class Controller {
 	/**
 	 * Constante que representa los datos de las infracciones realizadas en Enero
 	 */
-	public static final String DATOS_ENERO = "./data/Moving_Violations_Issued_in_January_2018.csv";
+	public static final String DATOS_ENERO = "./data/Moving_Violations_Issued_in_January_2018.json";
 	
 	/**
 	 * Constante que representa los datos de las infracciones realizadas en Febrero
 	 */
-	public static final String DATOS_FEBRERO = "./data/Moving_Violations_Issued_in_February_2018.csv";
+	public static final String DATOS_FEBRERO = "./data/Moving_Violations_Issued_in_February_2018.json";
 	
 	/**
 	 * Constante que representa los datos de las infracciones realizadas en Marzo
 	 */
-	public static final String DATOS_MARZO = "./data/Moving_Violations_Issued_in_March_2018.csv";
+	public static final String DATOS_MARZO = "./data/Moving_Violations_Issued_in_March_2018.json";
 	
 	/**
 	 * Constante que representa los datos de las infracciones realizadas en Abril
 	 */
-	public static final String DATOS_ABRIL = "./data/Moving_Violations_Issued_in_April_2018.csv";
+	public static final String DATOS_ABRIL = "./data/Moving_Violations_Issued_in_April_2018.json";
 	
 	/**
 	 * Constante que representa los datos de las infracciones realizadas en Mayo
 	 */
-	public static final String DATOS_MAYO = "./data/Moving_Violations_Issued_in_May_2018.csv";
+	public static final String DATOS_MAYO = "./data/Moving_Violations_Issued_in_May_2018.json";
 	
 	/**
 	 * Constante que representa los datos de las infracciones realizadas en Junio
 	 */
-	public static final String DATOS_JUNIO = "./data/Moving_Violations_Issued_in_June_2018.csv";
+	public static final String DATOS_JUNIO = "./data/Moving_Violations_Issued_in_June_2018.json";
 	
 	//--------------------------------------------------------------------------------------------------
 	// Atributos
@@ -80,14 +85,9 @@ public class Controller {
 	private MovingViolationsManagerView view;
 	
 	/**
-	 * Cola donde se van a cargar los datos de los archivos
+	 * Lista donde se van a cargar los datos de los archivos
 	 */
-	private Queue<VOMovingViolations> movingViolationsQueue;
-	
-	/**
-	 * Pila donde se van a cargar los datos de los archivos
-	 */
-	private Stack<VOMovingViolations> movingViolationsStack;
+	private DoubleLinkedList<VOMovingViolations> movingViolationsList;
 	
 	/**
 	 * Cautrimestre del cual se subiran los datos - 1(Enero - Abril), 2(Mayo - Agosto) o 3(Septiembre - Diciembre)
@@ -107,9 +107,7 @@ public class Controller {
 	public Controller() {
 		view = new MovingViolationsManagerView();
 		
-		//TODO, inicializar la pila y la cola
-		movingViolationsQueue = null;
-		movingViolationsStack = null;
+		movingViolationsList = null;
 	}
 	
 	/**
@@ -278,126 +276,110 @@ public class Controller {
 	 * @param pCuatrimestre Numero de cuatrimestre escogido por el usuario. pCuatrimestre = 1 | pCuatrimestre = 2 | pCuatrimestre = 3
 	 * @throws Exception si no pudo cargar los datos.
 	 */
-	public void loadMovingViolations(int pCuatrimestre) throws Exception{
-		// TODO
-		movingViolationsQueue = new Queue<VOMovingViolations>();
-		int nCuatrimestre = pCuatrimestre;
-		boolean cargaCompleta = false;
+	public void loadMovinViolations(String pJson) {
+		JsonParser parser = new JsonParser();
 		int i = 0;
-		String mes = null;
 		
-		while(cargaCompleta)
-		{
-			if(nCuatrimestre == 1)
-			{
-				if(i == 0)
-				{
-					mes = DATOS_ENERO;
-					i++;
-				}
-				if(i == 1)
-				{
-					mes = DATOS_FEBRERO;
-					i++;
-				}
-				if(i == 2)
-				{
-					mes = DATOS_MARZO;
-					i++;
-				}
-				if(i == 3)
-				{
-					mes = DATOS_ABRIL;
-					i = 0;
-					cargaCompleta = true;
-				}
-			}
-			if(nCuatrimestre == 2)
-			{
-				if(i == 0)
-				{
-					mes = DATOS_MAYO;
-					i++;
-				}
-				if(i == 1)
-				{
-					mes = DATOS_JUNIO;
-					i++;
-				}
-				if(i == 2)
-				{
-					mes = DATOS_JULIO;
-					i++;
-				}
-				if(i == 3)
-				{
-					mes = DATOS_AGOSTO;
-					i = 0;
-					cargaCompleta = true;
-				}
-			}
-			if(nCuatrimestre == 3)
-			{
-				if(i == 0)
-				{
-					mes = DATOS_SEPTIEMBRE;
-					i++;
-				}
-				if(i == 1)
-				{
-					mes = DATOS_OCTUBRE;
-					i++;
-				}
-				if(i == 2)
-				{
-					mes = DATOS_NOVIEMBRE;
-					i++;
-				}
-				if(i == 3)
-				{
-					mes = DATOS_DICIEMBRE;
-					i = 0;
-					cargaCompleta = true;
-				}
-			}
+		try {
+			JsonArray array = (JsonArray) parser.parse(new FileReader(pJson));
+			Iterator iter = array.iterator();
 			
-			File flMovingViolations = new File(mes);
-			FileReader fr = new FileReader(flMovingViolations);
-			BufferedReader lector = new BufferedReader(fr);
-			lector.readLine();
-			
-			String info = lector.readLine();
-			
-			while(info != null)
-			{
-				String[] mv = info.split(",");
+			while(iter.hasNext()) {
+				JsonObject object = (JsonObject) array.get(i);
 				
-				String objectId = mv[0].trim();
-				String row = mv[1].trim();
-				String location = mv[2].trim();
-				String addressId = mv[3].trim();
-				String streetsegId = mv[4].trim();
-				String xCoord = mv[5].trim();
-				String yCoord = mv[6].trim();
-				String ticketType= mv[7].trim();
-				String fineAMT = mv[8].trim();
-				String totalPaid = mv[9].trim();
-				String penalty1 = mv[10].trim();
-				String penalty2 = mv[11].trim();
-				String accidentIndicator = mv[12].trim();
-				String ticketIssueDate = mv[13].trim();
-				String violationCode = mv[14].trim();
-				String violationDescription = mv[15].trim();
-				String rowId = mv[16].trim();
+				String objectId = " ";
+				if(object.get("OBJECTID") != null) {
+					objectId = object.get("OBJECTID").toString();
+				}
 				
-				movingViolationsQueue.enqueue(new VOMovingViolations(Integer.parseInt(objectId), location, Integer.parseInt(addressId), Integer.parseInt(streetsegId), Integer.parseInt(xCoord), Integer.parseInt(yCoord), ticketType, Integer.parseInt(fineAMT), Integer.parseInt(totalPaid), Integer.parseInt(penalty1), Integer.parseInt(penalty2), accidentIndicator, ticketIssueDate, violationCode, violationDescription, Integer.parseInt(rowId)));
-				movingViolationsStack.push(new VOMovingViolations(Integer.parseInt(objectId), location, Integer.parseInt(addressId), Integer.parseInt(streetsegId), Integer.parseInt(xCoord), Integer.parseInt(yCoord), ticketType, Integer.parseInt(fineAMT), Integer.parseInt(totalPaid), Integer.parseInt(penalty1), Integer.parseInt(penalty2), accidentIndicator, ticketIssueDate, violationCode, violationDescription, Integer.parseInt(rowId)));
+				String row = " ";
+				if(object.get("ROW_") != null) {
+					row = object.get("ROW_").toString();
+				}
+				
+				String location = " ";
+				if(object.get("LOCATION") != null) {
+					location = object.get("LOCATION").toString();
+				}
+				
+				String addressId = " ";
+				if(object.get("ADDRESS_ID") != null) {
+					addressId = object.get("ADDRESS_ID").toString();
+				}
+				
+				String streetSegId = " ";
+				if(object.get("STREETSEGID") != null) {
+					streetSegId = object.get("STREETSEGID").toString();
+				}
+				
+				String xCoord = " ";
+				if(object.get("XCOORD") != null) {
+					xCoord = object.get("XCOORD").toString();
+				}
+				
+				String yCoord = " ";
+				if(object.get("YCOORD") != null) {
+					yCoord = object.get("YCOORD").toString();
+				}
+				
+				String ticketType = " ";
+				if(object.get("TICKETTYPE") != null) {
+					ticketType = object.get("TICKETTYPE").toString();
+				}
+				
+				String fineAMT = " ";
+				if(object.get("FINEAMT") != null) {
+					fineAMT = object.get("FINEAMT").toString();
+				}
+				
+				String totalPaid = " ";
+				if(object.get("TOTALPAID") != null) {
+					totalPaid = object.get("TOTALPAID").toString();
+				}
+				
+				String penalty1 = " ";
+				if(object.get("PENALTY1") != null) {
+					penalty1 = object.get("PENALTY1").toString();
+				}
+				
+				String penalty2 = " ";
+				if(object.get("PENALTY2") != null) {
+					penalty2 = object.get("PENALTY2").toString();
+				}
+				
+				String accidentIndicator = " ";
+				if(object.get("ACCIDENTINDICATOR") != null) {
+					accidentIndicator = object.get("ACCIDENTINDICATOR").toString();
+				}
+				
+				String ticketIssueDate = " ";
+				if(object.get("TICKETISSUEDATE") != null) {
+					ticketIssueDate = object.get("TICKETISSUEDATE").toString();
+				}
+				
+				String violationCode = " ";
+				if(object.get("VIOLATIONCODE") != null) {
+					violationCode = object.get("VIOLATIONCODE").toString();
+				}
+				
+				String violationDesc = " ";
+				if(object.get("VIOLATIONDESC") != null) {
+					violationDesc = object.get("VIOLATIONDESC").toString();
+				}
+				
+				String rowId = " ";
+				if(object.get("ROW_ID") != null) {
+					rowId = object.get("ROW_ID").toString();
+				}
+				
+				movingViolationsList.agregar(new VOMovingViolations(Integer.parseInt(objectId), location, Integer.parseInt(addressId), Integer.parseInt(streetSegId), Integer.parseInt(xCoord), Integer.parseInt(yCoord), ticketType, Integer.parseInt(fineAMT), Integer.parseInt(totalPaid), Integer.parseInt(penalty1), Integer.parseInt(penalty2), accidentIndicator, ticketIssueDate, violationCode, violationDesc, Integer.parseInt(rowId)));
+				
+				iter.next();
+				i++;
 			}
-			if(cargaCompleta == true)
-			{
-				lector.close();
-				fr.close();	
-			}	
+		}
+		catch(Exception e) {
+			e.printStackTrace();
 		}
 	}
 	
